@@ -15,3 +15,16 @@ type CalculateResponse struct {
 	Price     float64 `json:"price"`
 	Comment   string  `json:"comment"`
 }
+
+type CalculateWithKarmaResponse struct {
+	Hours        float64  `json:"hours"`
+	Days         float64  `json:"days"`
+	Formatted    string   `json:"formatted"`
+	ItemName     string   `json:"itemName"`
+	Price        float64  `json:"price"`
+	Comment      string   `json:"comment"`
+	KarmaScore   float64  `json:"karmaScore"`
+	KarmaLevel   string   `json:"karmaLevel"`
+	KarmaDelta   float64  `json:"karmaDelta"`
+	KarmaReasons []string `json:"karmaReasons"`
+}
