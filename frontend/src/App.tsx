@@ -1,5 +1,14 @@
 import { useState, useEffect } from "react";
-import { Clock, DollarSign, ShoppingCart, TrendingUp } from "lucide-react";
+import {
+  Clock,
+  DollarSign,
+  ShoppingCart,
+  TrendingUp,
+  Award,
+} from "lucide-react";
+import { useKarma } from "./hooks/useKarma";
+import { KarmaBadge } from "./components/KarmaBadge";
+import { KarmaModal } from "./components/KarmaModal";
 
 interface Purchase {
   id: number;
@@ -10,6 +19,7 @@ interface Purchase {
   formatted: string;
   comment: string;
   timestamp: number;
+  karmaComment?: string;
 }
 
 type SalaryPeriod = "hour" | "day" | "month";
@@ -33,6 +43,17 @@ function App() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+
+  // Karma
+  const {
+    karma,
+    loading: karmaLoading,
+    updateKarma,
+    resetKarma,
+    deleteKarmaEvent,
+  } = useKarma();
+  const [showKarmaModal, setShowKarmaModal] = useState(false);
+  const [lastKarmaComment, setLastKarmaComment] = useState<string>("");
 
   // Загрузка данных при монтировании
   useEffect(() => {
@@ -145,6 +166,16 @@ function App() {
 
       const data = await res.json();
 
+      // Обновляем карму
+      const karmaResult = await updateKarma(
+        price,
+        data.hours,
+        itemName || "Без названия",
+      );
+      if (karmaResult) {
+        setLastKarmaComment(karmaResult.comment);
+      }
+
       // Добавляем новую покупку в НАЧАЛО списка
       setPurchases((prev) => [
         {
@@ -156,6 +187,7 @@ function App() {
           formatted: data.formatted,
           comment: data.comment,
           timestamp: Date.now(),
+          karmaComment: karmaResult?.comment || "",
         },
         ...prev,
       ]);
@@ -169,21 +201,63 @@ function App() {
     }
   };
 
-  const removePurchase = (id: number) => {
+  const removePurchase = async (id: number) => {
+    const purchase = purchases.find((p) => p.id === id);
+    if (purchase) {
+      // Удаляем событие кармы, связанное с этой покупкой
+      await deleteKarmaEvent(
+        purchase.itemName,
+        purchase.price,
+        purchase.timestamp,
+      );
+    }
     setPurchases((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handleResetKarma = async () => {
+    const success = await resetKarma();
+    if (success) {
+      setLastKarmaComment("Карма сброшена! Начинаем с чистого листа! 😇");
+    }
   };
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       {/* Header */}
       <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">
-          💰 Cost Count In Time
-        </h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-4xl font-bold text-white">
+            💰 Cost Count In Time
+          </h1>
+          {!karmaLoading && karma && (
+            <KarmaBadge karma={karma} onClick={() => setShowKarmaModal(true)} />
+          )}
+        </div>
         <p className="text-purple-200">
           Узнайте, сколько нужно работать для покупки мечты
         </p>
       </div>
+
+      {/* Последний комментарий кармы */}
+      {lastKarmaComment && (
+        <div className="mb-6 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-xl p-4 border border-purple-500/30">
+          <div className="flex items-start gap-3">
+            <Award className="w-6 h-6 text-purple-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="text-purple-200 text-sm font-medium mb-1">
+                Финансовая карма говорит:
+              </div>
+              <div className="text-white italic">{lastKarmaComment}</div>
+            </div>
+            <button
+              onClick={() => setLastKarmaComment("")}
+              className="text-purple-400 hover:text-white ml-auto"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Salary Card */}
       <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20">
@@ -327,9 +401,32 @@ function App() {
                   <p className="text-purple-100 italic">{purchase.comment}</p>
                 </div>
               )}
+
+              {purchase.karmaComment && (
+                <div className="bg-purple-500/10 rounded-xl p-3 border border-purple-500/30 mt-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Award className="w-4 h-4 text-purple-400" />
+                    <span className="text-purple-300 text-xs font-medium">
+                      Финансовая карма
+                    </span>
+                  </div>
+                  <p className="text-purple-100 text-sm italic">
+                    {purchase.karmaComment}
+                  </p>
+                </div>
+              )}
             </div>
           ))}
         </div>
+      )}
+
+      {/* Karma Modal */}
+      {showKarmaModal && karma && (
+        <KarmaModal
+          karma={karma}
+          onClose={() => setShowKarmaModal(false)}
+          onReset={handleResetKarma}
+        />
       )}
     </div>
   );
