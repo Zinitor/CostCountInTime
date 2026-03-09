@@ -3,9 +3,552 @@
 @tailwind utilities;
 
 body {
-  @apply bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800 min-h-screen;
+    @apply min-h-screen;
 }
 
 #root {
-  @apply min-h-screen;
+    @apply min-h-screen;
+}
+
+/* Падающие частицы */
+@keyframes fall {
+    0% {
+        transform: translateY(-50px) rotate(0deg);
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.6;
+    }
+    90% {
+        opacity: 0.6;
+    }
+    100% {
+        transform: translateY(100vh) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.animate-fall {
+    animation: fall linear infinite;
+}
+
+/* Плавающие облака */
+@keyframes float {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    25% {
+        transform: translate(10px, -10px) scale(1.05);
+    }
+    50% {
+        transform: translate(-5px, -20px) scale(0.95);
+    }
+    75% {
+        transform: translate(-10px, -10px) scale(1.02);
+    }
+}
+
+.animate-float {
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float-slow {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    33% {
+        transform: translate(-15px, -15px) scale(1.08);
+    }
+    66% {
+        transform: translate(10px, -25px) scale(0.92);
+    }
+}
+
+.animate-float-slow {
+    animation: float-slow 9s ease-in-out infinite;
+}
+
+/* Дыхание */
+@keyframes breathe {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.15;
+    }
+}
+
+.animate-breathe {
+    animation: breathe 4s ease-in-out infinite;
+}
+
+@keyframes breathe-delayed {
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.1;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 0.15;
+    }
+}
+
+.animate-breathe-delayed {
+    animation: breathe-delayed 5s ease-in-out infinite;
+    animation-delay: 1s;
+}
+
+/* Пульсация */
+@keyframes pulse-slow {
+    0%,
+    100% {
+        opacity: 0.1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.2;
+        transform: scale(1.1);
+    }
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 3s ease-in-out infinite;
+}
+
+/* Дрейф */
+@keyframes drift {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(20px, -10px) scale(1.1);
+    }
+}
+
+.animate-drift {
+    animation: drift 8s ease-in-out infinite;
+}
+
+@keyframes drift-slow {
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+    50% {
+        transform: translate(-15px, 15px) scale(1.08);
+    }
+}
+
+.animate-drift-slow {
+    animation: drift-slow 10s ease-in-out infinite;
+}
+
+/* Мерцание */
+@keyframes flicker {
+    0%,
+    100% {
+        opacity: 0.2;
+        transform: scale(1);
+    }
+    25% {
+        opacity: 0.3;
+        transform: scale(1.05);
+    }
+    50% {
+        opacity: 0.15;
+        transform: scale(0.95);
+    }
+    75% {
+        opacity: 0.25;
+        transform: scale(1.02);
+    }
+}
+
+.animate-flicker {
+    animation: flicker 3s ease-in-out infinite;
+}
+
+@keyframes flicker-fast {
+    0%,
+    100% {
+        opacity: 0.2;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+.animate-flicker-fast {
+    animation: flicker-fast 1.5s ease-in-out infinite;
+}
+
+/* Огонь */
+@keyframes fire {
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.animate-fire {
+    animation: fire 2s ease-in-out infinite;
+}
+
+@keyframes fire-pulse {
+    0%,
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 0.3;
+    }
+    50% {
+        transform: scale(1.2) translateY(-10px);
+        opacity: 0.5;
+    }
+}
+
+.animate-fire-pulse {
+    animation: fire-pulse 3s ease-in-out infinite;
+}
+
+@keyframes fire-pulse-delayed {
+    0%,
+    100% {
+        transform: scale(1) translateY(0);
+        opacity: 0.3;
+    }
+    50% {
+        transform: scale(1.15) translateY(-8px);
+        opacity: 0.45;
+    }
+}
+
+.animate-fire-pulse-delayed {
+    animation: fire-pulse-delayed 3.5s ease-in-out infinite;
+    animation-delay: 0.5s;
+}
+
+@keyframes fire-flicker {
+    0%,
+    100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 0.25;
+    }
+    25% {
+        transform: scale(1.1) rotate(5deg);
+        opacity: 0.35;
+    }
+    50% {
+        transform: scale(0.9) rotate(-5deg);
+        opacity: 0.2;
+    }
+    75% {
+        transform: scale(1.05) rotate(3deg);
+        opacity: 0.3;
+    }
+}
+
+.animate-fire-flicker {
+    animation: fire-flicker 2s ease-in-out infinite;
+}
+
+/* Искры */
+@keyframes spark {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-100px) scale(0);
+        opacity: 0;
+    }
+}
+
+.animate-spark {
+    animation: spark 1.5s ease-out infinite;
+}
+
+/* Мерцание света */
+@keyframes shimmer {
+    0%,
+    100% {
+        opacity: 0.1;
+    }
+    50% {
+        opacity: 0.25;
+    }
+}
+
+.animate-shimmer {
+    animation: shimmer 4s ease-in-out infinite;
+}
+
+@keyframes shimmer-delayed {
+    0%,
+    100% {
+        opacity: 0.08;
+    }
+    50% {
+        opacity: 0.2;
+    }
+}
+
+.animate-shimmer-delayed {
+    animation: shimmer-delayed 5s ease-in-out infinite;
+    animation-delay: 1s;
+}
+
+/* Slide-in анимация для карточек */
+@keyframes slide-in-left {
+    0% {
+        transform: translateX(-100px) scale(0.9);
+        opacity: 0;
+    }
+    60% {
+        transform: translateX(10px) scale(1.02);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.animate-slide-in-left {
+    animation: slide-in-left 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Анимация тряски для кармы */
+@keyframes karma-shake {
+    0%,
+    100% {
+        transform: translateX(0) rotate(0deg);
+    }
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-10px) rotate(-2deg);
+    }
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(10px) rotate(2deg);
+    }
+}
+
+.animate-karma-shake {
+    animation: karma-shake 0.8s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* Анимация пульсации для обновления */
+@keyframes karma-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(168, 85, 247, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 20px rgba(168, 85, 247, 0);
+        transform: scale(1.05);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(168, 85, 247, 0);
+        transform: scale(1);
+    }
+}
+
+.animate-karma-pulse {
+    animation: karma-pulse 1s ease-out;
+}
+
+/* Анимация свечения для кармы */
+@keyframes karma-glow {
+    0%,
+    100% {
+        box-shadow:
+            0 0 5px rgba(168, 85, 247, 0.5),
+            0 0 10px rgba(168, 85, 247, 0.3),
+            0 0 15px rgba(168, 85, 247, 0.1);
+    }
+    50% {
+        box-shadow:
+            0 0 20px rgba(168, 85, 247, 0.8),
+            0 0 30px rgba(168, 85, 247, 0.5),
+            0 0 40px rgba(168, 85, 247, 0.3);
+    }
+}
+
+.animate-karma-glow {
+    animation: karma-glow 2s ease-in-out infinite;
+}
+
+/* Анимация появления сверху */
+@keyframes fade-in-down {
+    0% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    100% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.animate-fade-in-down {
+    animation: fade-in-down 0.4s ease-out forwards;
+}
+
+/* ===== УЛЬТИМАТИВНАЯ АНИМАЦИЯ СБРОСА КАРМЫ ===== */
+
+/* Взрывная волна */
+@keyframes reset-explosion {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+.animate-reset-explosion {
+    animation: reset-explosion 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Вспышка света */
+@keyframes reset-flash {
+    0%, 100% { opacity: 0; }
+    10%, 90% { opacity: 1; }
+}
+
+.animate-reset-flash {
+    animation: reset-flash 2s ease-in-out;
+}
+
+/* Вращающиеся частицы */
+@keyframes reset-particles {
+    0% {
+        transform: rotate(0deg) translateX(50px) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(720deg) translateX(200px) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+.animate-reset-particle {
+    animation: reset-particles 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+/* Падающие звёзды */
+@keyframes reset-falling-star {
+    0% {
+        transform: translateY(-100vh) scale(0);
+        opacity: 0;
+    }
+    20% {
+        opacity: 1;
+        transform: translateY(-50vh) scale(1);
+    }
+    100% {
+        transform: translateY(100vh) scale(0.5);
+        opacity: 0;
+    }
+}
+
+.animate-reset-falling-star {
+    animation: reset-falling-star 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+}
+
+/* Пульсация очищения */
+@keyframes reset-purify {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+        transform: scale(1);
+        filter: hue-rotate(0deg);
+    }
+    50% {
+        box-shadow: 0 0 100px 50px rgba(34, 197, 94, 0.5);
+        transform: scale(1.1);
+        filter: hue-rotate(90deg);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        transform: scale(1);
+        filter: hue-rotate(180deg);
+    }
+}
+
+.animate-reset-purify {
+    animation: reset-purify 2s ease-out forwards;
+}
+
+/* Тряска экрана */
+@keyframes reset-shake-screen {
+    0%, 100% { transform: translateX(0) translateY(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px) translateY(-5px); }
+    20%, 40%, 60%, 80% { transform: translateX(5px) translateY(5px); }
+}
+
+.animate-reset-shake {
+    animation: reset-shake-screen 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* Восходящий свет */
+@keyframes reset-rising-light {
+    0% {
+        height: 0%;
+        opacity: 0;
+    }
+    50% { opacity: 1; }
+    100% {
+        height: 100%;
+        opacity: 0;
+    }
+}
+
+.animate-reset-rising-light {
+    animation: reset-rising-light 1.5s ease-in-out forwards;
+}
+
+/* Исчезновение тьмы */
+@keyframes reset-darkness-fade {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+.animate-reset-darkness-fade {
+    animation: reset-darkness-fade 1s ease-out forwards;
+}
+
+/* Спиральные частицы */
+@keyframes reset-spiral {
+    0% {
+        transform: rotate(0deg) translateX(30px);
+        opacity: 1;
+    }
+    100% {
+        transform: rotate(1440deg) translateX(150px);
+        opacity: 0;
+    }
+}
+
+.animate-reset-spiral {
+    animation: reset-spiral 1.5s cubic-bezier(0.19, 1, 0.22, 1) forwards;
 }

@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "backend/main.go",
+      "src": "backend/api.go",
       "use": "@vercel/go"
     },
     {
@@ -16,7 +16,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/main.go"
+      "dest": "backend/api.go"
     },
     {
       "src": "/(.*)",

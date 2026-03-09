@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
-import {
-  Clock,
-  DollarSign,
-  ShoppingCart,
-  TrendingUp,
-  Award,
-} from "lucide-react";
+import { DollarSign, ShoppingCart, TrendingUp, Award } from "lucide-react";
 import { useKarma } from "./hooks/useKarma";
 import { KarmaBadge } from "./components/KarmaBadge";
 import { KarmaModal } from "./components/KarmaModal";
+import { KarmaBackground } from "./components/KarmaBackground";
+import { KarmaAlert } from "./components/KarmaAlert";
+import { PurchaseCard } from "./components/PurchaseCard";
+import { KarmaResetAnimation } from "./components/KarmaResetAnimation";
 
 interface Purchase {
   id: number;
@@ -19,7 +17,7 @@ interface Purchase {
   formatted: string;
   comment: string;
   timestamp: number;
-  karmaComment?: string;
+  purchaseComment?: string;
 }
 
 type SalaryPeriod = "hour" | "day" | "month";
@@ -54,6 +52,15 @@ function App() {
   } = useKarma();
   const [showKarmaModal, setShowKarmaModal] = useState(false);
   const [lastKarmaComment, setLastKarmaComment] = useState<string>("");
+  const [karmaAlert, setKarmaAlert] = useState<{
+    show: boolean;
+    level: any;
+    score: number;
+    scoreDelta: number;
+    purchaseComment: string;
+  } | null>(null);
+  const [justAddedIds, setJustAddedIds] = useState<Set<number>>(new Set());
+  const [showResetAnimation, setShowResetAnimation] = useState(false);
 
   // Загрузка данных при монтировании
   useEffect(() => {
@@ -173,13 +180,25 @@ function App() {
         itemName || "Без названия",
       );
       if (karmaResult) {
-        setLastKarmaComment(karmaResult.comment);
+        // Показывем комментарий покупки (не уровня кармы!)
+        setLastKarmaComment(
+          karmaResult.purchase_comment || karmaResult.comment,
+        );
+        // Показываем KarmaAlert
+        setKarmaAlert({
+          show: true,
+          level: karmaResult.level,
+          score: karmaResult.score,
+          scoreDelta: karmaResult.score_delta,
+          purchaseComment: karmaResult.purchase_comment || karmaResult.comment,
+        });
       }
 
       // Добавляем новую покупку в НАЧАЛО списка
+      const newId = Date.now();
       setPurchases((prev) => [
         {
-          id: Date.now(),
+          id: newId,
           itemName: data.itemName,
           price: data.price,
           hours: data.hours,
@@ -187,10 +206,21 @@ function App() {
           formatted: data.formatted,
           comment: data.comment,
           timestamp: Date.now(),
-          karmaComment: karmaResult?.comment || "",
+          purchaseComment: karmaResult?.purchase_comment || "",
         },
         ...prev,
       ]);
+
+      // Добавляем ID в список только что добавленных для анимации
+      setJustAddedIds((prev) => new Set(prev).add(newId));
+      // Удаляем из списка анимации через 500мс
+      setTimeout(() => {
+        setJustAddedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(newId);
+          return next;
+        });
+      }, 500);
 
       // Очищаем только цену, название оставляем
       setPrice(0);
@@ -214,221 +244,213 @@ function App() {
     setPurchases((prev) => prev.filter((p) => p.id !== id));
   };
 
-  const handleResetKarma = async () => {
+  const handleResetKarma = () => {
+    // Запускаем анимацию сброса кармы
+    setShowResetAnimation(true);
+  };
+
+  const handleResetAnimationComplete = async () => {
+    // После завершения анимации реально сбрасываем карму
     const success = await resetKarma();
     if (success) {
       setLastKarmaComment("Карма сброшена! Начинаем с чистого листа! 😇");
     }
+    setShowResetAnimation(false);
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-2xl">
-      {/* Header */}
-      <div className="text-center mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-4xl font-bold text-white">
-            💰 Cost Count In Time
-          </h1>
-          {!karmaLoading && karma && (
-            <KarmaBadge karma={karma} onClick={() => setShowKarmaModal(true)} />
-          )}
-        </div>
-        <p className="text-purple-200">
-          Узнайте, сколько нужно работать для покупки мечты
-        </p>
-      </div>
+    <>
+      {/* Анимированный фон в зависимости от кармы */}
+      <KarmaBackground karmaLevel={karma?.level || null} />
 
-      {/* Последний комментарий кармы */}
-      {lastKarmaComment && (
-        <div className="mb-6 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-xl p-4 border border-purple-500/30">
-          <div className="flex items-start gap-3">
-            <Award className="w-6 h-6 text-purple-400 flex-shrink-0 mt-0.5" />
-            <div>
-              <div className="text-purple-200 text-sm font-medium mb-1">
-                Финансовая карма говорит:
+      <div className="container mx-auto px-4 py-8 max-w-2xl relative z-10">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-4xl font-bold text-white">
+              💰 Cost Count In Time
+            </h1>
+            {!karmaLoading && karma && (
+              <KarmaBadge
+                karma={karma}
+                onClick={() => setShowKarmaModal(true)}
+              />
+            )}
+          </div>
+          <p className="text-purple-200">
+            Узнайте, сколько нужно работать для покупки мечты
+          </p>
+        </div>
+
+        {/* Последний комментарий кармы */}
+        {lastKarmaComment && (
+          <div className="mb-6 bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-xl p-4 border border-purple-500/30">
+            <div className="flex items-start gap-3">
+              <Award className="w-6 h-6 text-purple-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="text-purple-200 text-sm font-medium mb-1">
+                  Финансовая карма говорит:
+                </div>
+                <div className="text-white italic">{lastKarmaComment}</div>
               </div>
-              <div className="text-white italic">{lastKarmaComment}</div>
+              <button
+                onClick={() => setLastKarmaComment("")}
+                className="text-purple-400 hover:text-white ml-auto"
+              >
+                ✕
+              </button>
             </div>
+          </div>
+        )}
+
+        {/* Salary Card */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20">
+          <div className="flex items-center gap-3 mb-4">
+            <DollarSign className="w-6 h-6 text-green-400" />
+            <h2 className="text-xl font-semibold text-white">Ваша зарплата</h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-purple-200 text-sm mb-2">
+                Сумма (₽)
+              </label>
+              <input
+                type="number"
+                value={salary}
+                onChange={(e) => setSalary(Number(e.target.value))}
+                className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="50000"
+              />
+            </div>
+
+            <div>
+              <label className="block text-purple-200 text-sm mb-2">
+                Период
+              </label>
+              <div className="flex gap-2">
+                {(["hour", "day", "month"] as SalaryPeriod[]).map((period) => (
+                  <button
+                    key={period}
+                    onClick={() => setSalaryPeriod(period)}
+                    className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all ${
+                      salaryPeriod === period
+                        ? "bg-purple-500 text-white"
+                        : "bg-white/5 text-purple-200 hover:bg-white/10"
+                    }`}
+                  >
+                    в {periodLabels[period]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Purchase Input Card */}
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20">
+          <div className="flex items-center gap-3 mb-4">
+            <ShoppingCart className="w-6 h-6 text-pink-400" />
+            <h2 className="text-xl font-semibold text-white">
+              Что хотите купить?
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-purple-200 text-sm mb-2">
+                Название{" "}
+                <span className="text-purple-400">(необязательно)</span>
+              </label>
+              <input
+                type="text"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="Например: iPhone 15"
+              />
+            </div>
+
+            <div>
+              <label className="block text-purple-200 text-sm mb-2">
+                Цена (₽)
+              </label>
+              <input
+                type="number"
+                value={price || ""}
+                onChange={(e) => setPrice(Number(e.target.value))}
+                className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                placeholder="120000"
+              />
+            </div>
+
+            {error && (
+              <div className="text-red-400 text-sm bg-red-500/10 px-4 py-2 rounded-lg">
+                {error}
+              </div>
+            )}
+
             <button
-              onClick={() => setLastKarmaComment("")}
-              className="text-purple-400 hover:text-white ml-auto"
+              onClick={calculate}
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 text-white font-semibold py-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]"
             >
-              ✕
+              {loading ? "Считаем..." : "Рассчитать"}
             </button>
           </div>
         </div>
-      )}
 
-      {/* Salary Card */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20">
-        <div className="flex items-center gap-3 mb-4">
-          <DollarSign className="w-6 h-6 text-green-400" />
-          <h2 className="text-xl font-semibold text-white">Ваша зарплата</h2>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-purple-200 text-sm mb-2">
-              Сумма (₽)
-            </label>
-            <input
-              type="number"
-              value={salary}
-              onChange={(e) => setSalary(Number(e.target.value))}
-              className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="50000"
-            />
-          </div>
-
-          <div>
-            <label className="block text-purple-200 text-sm mb-2">Период</label>
-            <div className="flex gap-2">
-              {(["hour", "day", "month"] as SalaryPeriod[]).map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setSalaryPeriod(period)}
-                  className={`flex-1 py-2 px-4 rounded-xl font-medium transition-all ${
-                    salaryPeriod === period
-                      ? "bg-purple-500 text-white"
-                      : "bg-white/5 text-purple-200 hover:bg-white/10"
-                  }`}
-                >
-                  в {periodLabels[period]}
-                </button>
-              ))}
+        {/* Results */}
+        {purchases.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 mb-4">
+              <TrendingUp className="w-6 h-6 text-yellow-400" />
+              <h2 className="text-xl font-semibold text-white">Результаты</h2>
             </div>
+
+            {purchases.map((purchase) => (
+              <PurchaseCard
+                key={purchase.id}
+                id={purchase.id}
+                itemName={purchase.itemName}
+                price={purchase.price}
+                hours={purchase.hours}
+                formatted={purchase.formatted}
+                comment={purchase.comment}
+                purchaseComment={purchase.purchaseComment}
+                onRemove={removePurchase}
+                isNew={justAddedIds.has(purchase.id)}
+              />
+            ))}
           </div>
-        </div>
+        )}
+
+        {/* Karma Modal */}
+        {showKarmaModal && karma && (
+          <KarmaModal
+            karma={karma}
+            onClose={() => setShowKarmaModal(false)}
+            onReset={handleResetKarma}
+          />
+        )}
+
+        {/* Karma Alert */}
+        {karmaAlert?.show && karma && (
+          <KarmaAlert
+            level={karmaAlert.level}
+            score={karmaAlert.score}
+            scoreDelta={karmaAlert.scoreDelta}
+            purchaseComment={karmaAlert.purchaseComment}
+            onClose={() => setKarmaAlert(null)}
+          />
+        )}
+
+        {/* Karma Reset Animation */}
+        {showResetAnimation && (
+          <KarmaResetAnimation onComplete={handleResetAnimationComplete} />
+        )}
       </div>
-
-      {/* Purchase Input Card */}
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20">
-        <div className="flex items-center gap-3 mb-4">
-          <ShoppingCart className="w-6 h-6 text-pink-400" />
-          <h2 className="text-xl font-semibold text-white">
-            Что хотите купить?
-          </h2>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-purple-200 text-sm mb-2">
-              Название <span className="text-purple-400">(необязательно)</span>
-            </label>
-            <input
-              type="text"
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="Например: iPhone 15"
-            />
-          </div>
-
-          <div>
-            <label className="block text-purple-200 text-sm mb-2">
-              Цена (₽)
-            </label>
-            <input
-              type="number"
-              value={price || ""}
-              onChange={(e) => setPrice(Number(e.target.value))}
-              className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-              placeholder="120000"
-            />
-          </div>
-
-          {error && (
-            <div className="text-red-400 text-sm bg-red-500/10 px-4 py-2 rounded-lg">
-              {error}
-            </div>
-          )}
-
-          <button
-            onClick={calculate}
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 text-white font-semibold py-4 rounded-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]"
-          >
-            {loading ? "Считаем..." : "Рассчитать"}
-          </button>
-        </div>
-      </div>
-
-      {/* Results */}
-      {purchases.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 mb-4">
-            <TrendingUp className="w-6 h-6 text-yellow-400" />
-            <h2 className="text-xl font-semibold text-white">Результаты</h2>
-          </div>
-
-          {purchases.map((purchase) => (
-            <div
-              key={purchase.id}
-              className="bg-gradient-to-r from-purple-500/20 to-pink-500/20 backdrop-blur-lg rounded-2xl p-6 border border-white/20"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-lg font-semibold text-white">
-                    {purchase.itemName}
-                  </h3>
-                  <p className="text-purple-200">
-                    {purchase.price.toLocaleString()} ₽
-                  </p>
-                </div>
-                <button
-                  onClick={() => removePurchase(purchase.id)}
-                  className="text-purple-300 hover:text-white transition-colors"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <div className="flex items-center gap-3 bg-white/10 rounded-xl p-4">
-                <Clock className="w-8 h-8 text-yellow-400" />
-                <div>
-                  <p className="text-purple-200 text-sm">Нужно отработать</p>
-                  <p className="text-2xl font-bold text-white">
-                    {purchase.formatted}
-                  </p>
-                  <p className="text-purple-300 text-sm">
-                    ({purchase.hours.toFixed(1)} часов)
-                  </p>
-                </div>
-              </div>
-
-              {purchase.comment && (
-                <div className="bg-black/20 rounded-xl p-4 border-l-4 border-purple-500">
-                  <p className="text-purple-100 italic">{purchase.comment}</p>
-                </div>
-              )}
-
-              {purchase.karmaComment && (
-                <div className="bg-purple-500/10 rounded-xl p-3 border border-purple-500/30 mt-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Award className="w-4 h-4 text-purple-400" />
-                    <span className="text-purple-300 text-xs font-medium">
-                      Финансовая карма
-                    </span>
-                  </div>
-                  <p className="text-purple-100 text-sm italic">
-                    {purchase.karmaComment}
-                  </p>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Karma Modal */}
-      {showKarmaModal && karma && (
-        <KarmaModal
-          karma={karma}
-          onClose={() => setShowKarmaModal(false)}
-          onReset={handleResetKarma}
-        />
-      )}
-    </div>
+    </>
   );
 }
 

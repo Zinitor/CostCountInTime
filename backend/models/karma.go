@@ -48,12 +48,13 @@ type KarmaUpdateRequest struct {
 }
 
 type KarmaUpdateResponse struct {
-	Score       float64     `json:"score"`
-	Level       KarmaLevel  `json:"level"`
-	ScoreDelta  float64     `json:"score_delta"`
-	Reasons     []string    `json:"reasons"`
-	Stats       KarmaStats  `json:"stats"`
-	Comment     string      `json:"comment"`
+	Score           float64    `json:"score"`
+	Level           KarmaLevel `json:"level"`
+	ScoreDelta      float64    `json:"score_delta"`
+	Reasons         []string   `json:"reasons"`
+	Stats           KarmaStats `json:"stats"`
+	Comment         string     `json:"comment"`          // Комментарий уровня кармы
+	PurchaseComment string     `json:"purchase_comment"` // Комментарий покупки
 }
 
 type LevelInfo struct {

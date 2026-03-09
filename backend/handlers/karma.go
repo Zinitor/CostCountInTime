@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -57,26 +58,102 @@ func InitKarmaDB(dbPath string) error {
 }
 
 // Расчёт дельты кармы
-func calculateKarmaDelta(price, hoursNeeded float64, itemName string) (float64, []string) {
+func calculateKarmaDelta(price, hoursNeeded float64, itemName string) (float64, []string, string) {
 	var delta float64
 	var reasons []string
+	var purchaseComment string
 
 	// 1. Цена относительно зарплаты (часы работы)
 	if hoursNeeded < 1 {
 		delta -= 2
 		reasons = append(reasons, "Разумная трата (< 1 часа)")
+		comments := []string{
+			"😏 Отлично, это почти бесплатно!",
+			"💪 Даже не заметишь в бюджете!",
+			"✨ Мелочь, а приятно!",
+			"🎯 Бери не думая!",
+			"👌 Это уровень 'кофе с собой'!",
+			"🦋 Лёгкая покупка!",
+			"💰 Сдача из кошелька!",
+		}
+		purchaseComment = comments[rand.Intn(len(comments))]
 	} else if hoursNeeded < 8 {
 		delta += 0
-		reasons = append(reasons, "Нормальная покупка")
+		reasons = append(reasons, "Нормальная покупка (1-8 часов)")
+		comments := []string{
+			"👍 Разумная покупка",
+			"😌 В пределах разумного",
+			"📊 Хорошее соотношение цена/удовольствие",
+			"🎉 Нормальный расход!",
+			"⚖️ Баланс соблюден",
+			"💼 Это стоит того!",
+			"🌟 Хороший выбор!",
+		}
+		purchaseComment = comments[rand.Intn(len(comments))]
 	} else if hoursNeeded < 40 {
 		delta += 5
 		reasons = append(reasons, "Дороговато (8-40 часов)")
+		comments := []string{
+			"🤔 Подумай дважды, это несколько дней работы",
+			"💭 Оно того стоит?",
+			"⏳ Почти неделя работы...",
+			"📉 Заметно для бюджета",
+			"🧮 Посчитай ещё раз",
+			"😅 Неделька работы на одной вещи",
+			"🎯 Цель достойная, но подумай",
+			"💸 Придется потрудиться!",
+		}
+		purchaseComment = comments[rand.Intn(len(comments))]
 	} else if hoursNeeded < 200 {
 		delta += 15
 		reasons = append(reasons, "Серьёзная трата (40-200 часов)")
-	} else {
+		comments := []string{
+			"😰 Это 1-3 месяца работы! Ты уверен?",
+			"🚦 Серьезное вложение времени",
+			"💼 Квартал на одной вещи!",
+			"😬 Ого, это много!",
+			"📊 Соотноси с годовым бюджетом",
+			"🎢 Американские горки для кошелька",
+			"⚠️ Зона риска!",
+			"🧠 Включи голову перед покупкой",
+			"💭 А можно ли дешевле?",
+			"🔍 Поищи альтернативы",
+		}
+		purchaseComment = comments[rand.Intn(len(comments))]
+	} else if hoursNeeded < 500 {
 		delta += 25
-		reasons = append(reasons, "Безумие (> 200 часов)")
+		reasons = append(reasons, "Безумие (200-500 часов)")
+		comments := []string{
+			"🚨 ТЫ В СВОЁМ УМЕ?! Это годы работы!",
+			"😱 Полгода-год жизни за вещь?!",
+			"🎢 Это не покупка, это аттракцион!",
+			"🤯 Мозг кипит от этой цены!",
+			"💸 Твой кошелек в шоке!",
+			"⏳ Годы уходят на работу ради этого...",
+			"🎭 Ты работаешь на вещь или она на тебя?",
+			"🚩 Красный флаг финансового мира!",
+			"😵 Голова кругом от суммы!",
+			"📉 Это падение в бездну!",
+		}
+		purchaseComment = comments[rand.Intn(len(comments))]
+	} else {
+		delta += 35
+		reasons = append(reasons, "Финансовое самоубийство (> 500 часов)")
+		comments := []string{
+			"💀💀💀 ЭТО НЕ ПОКУПКА — ЭТО ПРИГОВОР!",
+			"🔥 ГОРИМ В АДУ ФИНАНСОВОМ!",
+			"🤡 КЛОУН ФИНАНСОВЫЙ АКТИВИРОВАЛСЯ!",
+			"🚨 ТРЕВОГА! ВЫХОДИТЕ ИЗ МАГАЗИНА!",
+			"😭 Я ПЛАЧУ ЗА ТВОЙ КОШЕЛЁК!",
+			"🎰 Это не покупка, это казино!",
+			"💩 ФИНАНСОВЫЙ КОНСУЛЬТАНТ УШЁЛ В ЗАПОЙ!",
+			"🚑 ВЫЗЫВАЙТЕ СКОРУЮ ФИНАНСОВУЮ!",
+			"🪦 RIP ТВОИ НЕРВЫ И ВРЕМЯ!",
+			"🌋 ИЗВЕРЖЕНИЕ БЕЗУМИЯ!",
+			"⚰️ ГРОБ ДЛЯ БЮДЖЕТА!",
+			"🎪 ЦИРК УЕХАЛ, А ТЫ ОСТАЛСЯ!",
+		}
+		purchaseComment = comments[rand.Intn(len(comments))]
 	}
 
 	// 2. Проверка на "еду" с высокой ценой
@@ -85,6 +162,16 @@ func calculateKarmaDelta(price, hoursNeeded float64, itemName string) (float64, 
 		if containsIgnoreCase(itemName, keyword) && hoursNeeded > 2 {
 			delta += 10
 			reasons = append(reasons, "Дорогая еда!")
+			foodComments := []string{
+				"🥗 Дороговато для еды!",
+				"🍽️ Ресторанный чек дома?",
+				"🥐 Золотой круассан?",
+				"🍣 Суши из золота?",
+				"🥩 Мраморная говядина из Японии?",
+			}
+			if purchaseComment == "" {
+				purchaseComment = foodComments[rand.Intn(len(foodComments))]
+			}
 			break
 		}
 	}
@@ -115,7 +202,7 @@ func calculateKarmaDelta(price, hoursNeeded float64, itemName string) (float64, 
 		reasons = append(reasons, "Много покупок сегодня")
 	}
 
-	return delta, reasons
+	return delta, reasons, purchaseComment
 }
 
 func containsIgnoreCase(s, substr string) bool {
@@ -323,7 +410,7 @@ func KarmaUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Расчёт дельты
-	delta, reasons := calculateKarmaDelta(req.Price, req.HoursNeeded, req.ItemName)
+	delta, reasons, purchaseComment := calculateKarmaDelta(req.Price, req.HoursNeeded, req.ItemName)
 
 	// Сохранение события
 	event := &models.KarmaEvent{
@@ -348,12 +435,13 @@ func KarmaUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	comment := getKarmaComment(level.Level, delta, reasons)
 
 	response := models.KarmaUpdateResponse{
-		Score:      math.Round(newScore*100) / 100,
-		Level:      level.Level,
-		ScoreDelta: delta,
-		Reasons:    reasons,
-		Stats:      stats,
-		Comment:    comment,
+		Score:           math.Round(newScore*100) / 100,
+		Level:           level.Level,
+		ScoreDelta:      delta,
+		Reasons:         reasons,
+		Stats:           stats,
+		Comment:         comment,
+		PurchaseComment: purchaseComment,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -470,4 +558,9 @@ func KarmaDeleteEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// getCurrentTimestamp возвращает текущий timestamp для тестов
+func getCurrentTimestamp() int64 {
+	return time.Now().Unix()
 }
