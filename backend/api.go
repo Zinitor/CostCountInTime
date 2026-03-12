@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"sync"
 
 	"costcountintimeapp/application/service"
+	"costcountintimeapp/domain/repository"
 	"costcountintimeapp/infrastructure/persistence"
 	interfaceshttp "costcountintimeapp/interfaces/http"
 	"costcountintimeapp/interfaces/router"
@@ -15,11 +18,26 @@ var (
 	routerOnce     sync.Once
 )
 
-// init initializes in-memory karma storage for Vercel
+// init initializes storage for Vercel serverless functions
 func init() {
 	routerOnce.Do(func() {
-		// Для serverless используем in-memory репозиторий
-		karmaRepo := persistence.NewInMemoryKarmaRepository()
+		// Try to use Vercel Blob in production, fallback to in-memory
+		var karmaRepo repository.KarmaRepository
+		var err error
+
+		if os.Getenv("BLOB_READ_WRITE_TOKEN") != "" {
+			karmaRepo, err = persistence.NewBlobKarmaRepository()
+			if err != nil {
+				log.Printf("⚠️ Blob storage failed: %v, falling back to in-memory", err)
+				karmaRepo = persistence.NewInMemoryKarmaRepository()
+			} else {
+				log.Println("✅ Using Vercel Blob for karma storage")
+			}
+		} else {
+			log.Println("⚠️ BLOB_READ_WRITE_TOKEN not set, using in-memory karma storage")
+			karmaRepo = persistence.NewInMemoryKarmaRepository()
+		}
+
 		tagRepo := persistence.NewInMemoryTagRepository()
 
 		calculateService := service.NewCalculateService(tagRepo)
