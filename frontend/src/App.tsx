@@ -7,6 +7,9 @@ import { KarmaBackground } from "./components/KarmaBackground";
 import { KarmaAlert } from "./components/KarmaAlert";
 import { PurchaseCard } from "./components/PurchaseCard";
 import { KarmaResetAnimation } from "./components/KarmaResetAnimation";
+import { TagSelector } from "./components/TagSelector";
+import { PieChart } from "./components/PieChart";
+import { Tag, DEFAULT_TAGS } from "./lib/tags";
 
 interface Purchase {
   id: number;
@@ -16,8 +19,18 @@ interface Purchase {
   days: number;
   formatted: string;
   comment: string;
-  timestamp: number;
+  tagId?: string;
+  tagName?: string;
+  tagColorStart?: string;
+  tagColorEnd?: string;
   purchaseComment?: string;
+  timestamp: number;
+}
+
+interface BudgetSegment {
+  value: number;
+  color: string;
+  label: string;
 }
 
 type SalaryPeriod = "hour" | "day" | "month";
@@ -38,9 +51,13 @@ function App() {
   const [salaryPeriod, setSalaryPeriod] = useState<SalaryPeriod>("month");
   const [itemName, setItemName] = useState<string>("");
   const [price, setPrice] = useState<number>(0);
+  const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [tags, setTags] = useState<Tag[]>(DEFAULT_TAGS);
+  const [budgetSegments, setBudgetSegments] = useState<BudgetSegment[]>([]);
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // Karma
   const {
@@ -67,6 +84,19 @@ function App() {
     const now = Date.now();
     const expiryMs = EXPIRY_HOURS * 60 * 60 * 1000;
 
+    // Загружаем теги с сервера
+    fetch("/api/tags")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setTags(data);
+        }
+      })
+      .catch(() => {
+        // Если не удалось загрузить, используем дефолтные
+        setTags(DEFAULT_TAGS);
+      });
+
     // Загружаем зарплату
     const savedSalary = localStorage.getItem(SALARY_KEY);
     const savedPeriod = localStorage.getItem(SALARY_PERIOD_KEY);
@@ -88,6 +118,9 @@ function App() {
         localStorage.removeItem(STORAGE_KEY);
       }
     }
+
+    // Помечаем, что загрузка завершена
+    setIsInitialized(true);
   }, []);
 
   // Сохранение покупок при изменении
@@ -101,12 +134,35 @@ function App() {
 
   // Сохранение зарплаты при изменении
   useEffect(() => {
+    // Сохраняем только после завершения инициализации
+    if (!isInitialized) return;
+
     localStorage.setItem(SALARY_KEY, String(salary));
-  }, [salary]);
+  }, [salary, isInitialized]);
 
   useEffect(() => {
+    // Сохраняем только после завершения инициализации
+    if (!isInitialized) return;
+
     localStorage.setItem(SALARY_PERIOD_KEY, salaryPeriod);
-  }, [salaryPeriod]);
+  }, [salaryPeriod, isInitialized]);
+
+  // Обновление сегментов бюджета при изменении зарплаты или покупок
+  useEffect(() => {
+    if (!isInitialized) return;
+    updateBudgetSegments();
+  }, [salary, salaryPeriod, purchases, isInitialized]);
+
+  const updateBudgetSegments = () => {
+    // Создаём сегменты для каждой покупки
+    const segments: BudgetSegment[] = purchases.map((purchase, index) => ({
+      value: purchase.price,
+      color: purchase.tagColorStart || `hsl(${(index * 60) % 360}, 70%, 50%)`,
+      label: purchase.itemName || `Покупка ${index + 1}`,
+    }));
+
+    setBudgetSegments(segments);
+  };
 
   // Пересчёт всех покупок при изменении зарплаты
   useEffect(() => {
@@ -166,6 +222,7 @@ function App() {
           salaryPeriod,
           price,
           itemName: itemName || "Без названия",
+          tagId: selectedTag || undefined,
         }),
       });
 
@@ -196,6 +253,7 @@ function App() {
 
       // Добавляем новую покупку в НАЧАЛО списка
       const newId = Date.now();
+      const selectedTagInfo = tags.find((t) => t.id === selectedTag);
       setPurchases((prev) => [
         {
           id: newId,
@@ -205,6 +263,10 @@ function App() {
           days: data.days,
           formatted: data.formatted,
           comment: data.comment,
+          tagId: data.tagId,
+          tagName: data.tagName,
+          tagColorStart: selectedTagInfo?.colorStart,
+          tagColorEnd: selectedTagInfo?.colorEnd,
           timestamp: Date.now(),
           purchaseComment: karmaResult?.purchase_comment || "",
         },
@@ -224,6 +286,8 @@ function App() {
 
       // Очищаем только цену, название оставляем
       setPrice(0);
+      // Сбрасываем выбранный тег
+      setSelectedTag(null);
     } catch {
       setError("Не удалось выполнить расчёт");
     } finally {
@@ -257,6 +321,13 @@ function App() {
     }
     setShowResetAnimation(false);
   };
+
+  // Вычисляем зарплату в час и потраченную сумму
+  const hoursInPeriod =
+    salaryPeriod === "hour" ? 1 : salaryPeriod === "day" ? 8 : 168;
+  const salaryPerHour = salary / hoursInPeriod;
+  const spentAmount = purchases.reduce((sum, p) => sum + p.price, 0);
+  const totalBudget = salary;
 
   return (
     <>
@@ -347,6 +418,14 @@ function App() {
           </div>
         </div>
 
+        {/* Pie Chart - Распределение бюджета */}
+        <PieChart
+          totalBudget={totalBudget}
+          spentAmount={spentAmount}
+          salaryPerHour={salaryPerHour}
+          segments={budgetSegments}
+        />
+
         {/* Purchase Input Card */}
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 mb-6 border border-white/20">
           <div className="flex items-center gap-3 mb-4">
@@ -370,6 +449,13 @@ function App() {
                 placeholder="Например: iPhone 15"
               />
             </div>
+
+            {/* Выбор тега */}
+            <TagSelector
+              tags={tags}
+              selectedTag={selectedTag}
+              onSelectTag={setSelectedTag}
+            />
 
             <div>
               <label className="block text-purple-200 text-sm mb-2">
@@ -420,6 +506,8 @@ function App() {
                 purchaseComment={purchase.purchaseComment}
                 onRemove={removePurchase}
                 isNew={justAddedIds.has(purchase.id)}
+                tagColorStart={purchase.tagColorStart}
+                tagColorEnd={purchase.tagColorEnd}
               />
             ))}
           </div>

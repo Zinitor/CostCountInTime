@@ -5,7 +5,10 @@ import (
 	"net/http"
 	"os"
 
-	"costcountintimeapp/handlers"
+	"costcountintimeapp/application/service"
+	"costcountintimeapp/infrastructure/persistence"
+	interfaceshttp "costcountintimeapp/interfaces/http"
+	"costcountintimeapp/interfaces/router"
 )
 
 func main() {
@@ -14,26 +17,33 @@ func main() {
 		port = "8080"
 	}
 
-	// Инициализация Karma DB
-	if err := handlers.InitKarmaDB("karma.db"); err != nil {
+	// Инициализация инфраструктуры (Infrastructure Layer)
+	karmaRepo, err := persistence.NewSQLiteKarmaRepository("karma.db")
+	if err != nil {
 		log.Printf("⚠️ Failed to init karma DB: %v", err)
 	} else {
 		log.Println("✅ Karma DB initialized")
 	}
+	defer karmaRepo.Close()
 
-	// API endpoints
-	http.HandleFunc("/api/calculate", handlers.CORS(handlers.CalculateHandler))
-	http.HandleFunc("/api/karma/update", handlers.CORS(handlers.KarmaUpdateHandler))
-	http.HandleFunc("/api/karma/state", handlers.CORS(handlers.KarmaStateHandler))
-	http.HandleFunc("/api/karma/reset", handlers.CORS(handlers.KarmaResetHandler))
-	http.HandleFunc("/api/karma/delete_event", handlers.CORS(handlers.KarmaDeleteEventHandler))
+	tagRepo := persistence.NewInMemoryTagRepository()
+	log.Println("✅ Tag repository initialized")
 
-	// Статические файлы (frontend)
-	fs := http.Dir(".")
-	http.HandleFunc("/", handlers.StaticHandler(fs))
+	// Инициализация сервисов приложения (Application Layer)
+	calculateService := service.NewCalculateService(tagRepo)
+	karmaService := service.NewKarmaService(karmaRepo, tagRepo)
+
+	// Инициализация HTTP обработчиков (Interfaces Layer)
+	calculateHandler := interfaceshttp.NewCalculateHandler(calculateService)
+	karmaHandler := interfaceshttp.NewKarmaHandler(karmaService)
+	tagHandler := interfaceshttp.NewTagHandler(tagRepo)
+	staticHandler := interfaceshttp.StaticHandler(http.Dir("."))
+
+	// Инициализация роутера
+	r := router.NewRouter(calculateHandler, karmaHandler, tagHandler, staticHandler)
 
 	log.Printf("🚀 Server starting on port %s", port)
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, r); err != nil {
 		log.Fatal(err)
 	}
 }

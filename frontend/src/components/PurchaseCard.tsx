@@ -1,17 +1,19 @@
-import { Clock, Trash2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Clock, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface PurchaseCardProps {
-  id: number
-  itemName: string
-  price: number
-  hours: number
-  formatted: string
-  comment: string
-  purchaseComment?: string
-  onRemove: (id: number) => void
-  isNew?: boolean
-  highlightKarma?: boolean
+  id: number;
+  itemName: string;
+  price: number;
+  hours: number;
+  formatted: string;
+  comment: string;
+  purchaseComment?: string;
+  onRemove: (id: number) => void;
+  isNew?: boolean;
+  highlightKarma?: boolean;
+  tagColorStart?: string;
+  tagColorEnd?: string;
 }
 
 export function PurchaseCard({
@@ -25,52 +27,61 @@ export function PurchaseCard({
   onRemove,
   isNew = false,
   highlightKarma = false,
+  tagColorStart,
+  tagColorEnd,
 }: PurchaseCardProps) {
-  const [animationClass, setAnimationClass] = useState('')
-  const [removing, setRemoving] = useState(false)
+  const [animationClass, setAnimationClass] = useState("");
+  const [removing, setRemoving] = useState(false);
 
   useEffect(() => {
     if (isNew) {
-      setAnimationClass('animate-slide-in-left')
+      setAnimationClass("animate-slide-in-left");
     }
-  }, [isNew])
+  }, [isNew]);
 
   useEffect(() => {
     if (highlightKarma) {
-      setAnimationClass('animate-karma-shake animate-karma-glow')
+      setAnimationClass("animate-karma-shake animate-karma-glow");
       const timer = setTimeout(() => {
-        setAnimationClass('')
-      }, 2000)
-      return () => clearTimeout(timer)
+        setAnimationClass("");
+      }, 2000);
+      return () => clearTimeout(timer);
     }
-  }, [highlightKarma])
+  }, [highlightKarma]);
 
   const handleRemove = () => {
-    setRemoving(true)
+    setRemoving(true);
     setTimeout(() => {
-      onRemove(id)
-    }, 300)
-  }
+      onRemove(id);
+    }, 300);
+  };
+
+  // Определяем градиент в зависимости от тега
+  const gradientStyle =
+    tagColorStart && tagColorEnd
+      ? {
+          background: `linear-gradient(135deg, ${tagColorStart}30, ${tagColorEnd}30)`,
+        }
+      : {};
+
+  const borderColor =
+    tagColorStart && tagColorEnd ? { borderColor: `${tagColorStart}60` } : {};
 
   return (
     <div
       className={`
-        bg-gradient-to-r from-purple-500/20 to-pink-500/20 
         backdrop-blur-lg rounded-2xl p-6 border border-white/20
         transition-all duration-300
         ${animationClass}
-        ${removing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}
-        ${highlightKarma ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-transparent' : ''}
+        ${removing ? "opacity-0 scale-95" : "opacity-100 scale-100"}
+        ${highlightKarma ? "ring-2 ring-purple-500 ring-offset-2 ring-offset-transparent" : ""}
       `}
+      style={gradientStyle}
     >
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="text-lg font-semibold text-white">
-            {itemName}
-          </h3>
-          <p className="text-purple-200">
-            {price.toLocaleString()} ₽
-          </p>
+          <h3 className="text-lg font-semibold text-white">{itemName}</h3>
+          <p className="text-purple-200">{price.toLocaleString()} ₽</p>
         </div>
         <button
           onClick={handleRemove}
@@ -85,17 +96,16 @@ export function PurchaseCard({
         <Clock className="w-8 h-8 text-yellow-400" />
         <div>
           <p className="text-purple-200 text-sm">Нужно отработать</p>
-          <p className="text-2xl font-bold text-white">
-            {formatted}
-          </p>
-          <p className="text-purple-300 text-sm">
-            ({hours.toFixed(1)} часов)
-          </p>
+          <p className="text-2xl font-bold text-white">{formatted}</p>
+          <p className="text-purple-300 text-sm">({hours.toFixed(1)} часов)</p>
         </div>
       </div>
 
       {comment && (
-        <div className="bg-black/20 rounded-xl p-4 border-l-4 border-purple-500 mb-3">
+        <div
+          className="bg-black/20 rounded-xl p-4 border-l-4 border-purple-500 mb-3"
+          style={borderColor}
+        >
           <p className="text-purple-100 italic">{comment}</p>
         </div>
       )}
@@ -108,11 +118,9 @@ export function PurchaseCard({
               Финансовая карма
             </span>
           </div>
-          <p className="text-purple-100 text-sm italic">
-            {purchaseComment}
-          </p>
+          <p className="text-purple-100 text-sm italic">{purchaseComment}</p>
         </div>
       )}
     </div>
-  )
+  );
 }
