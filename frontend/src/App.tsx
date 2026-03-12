@@ -465,6 +465,11 @@ function App() {
                 type="number"
                 value={price || ""}
                 onChange={(e) => setPrice(Number(e.target.value))}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !loading) {
+                    calculate();
+                  }
+                }}
                 className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-white text-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                 placeholder="120000"
               />

@@ -28,11 +28,15 @@ export function PieChart({
   const [animatedSegments, setAnimatedSegments] = useState<AnimatedSegment[]>(
     [],
   );
-  const remainingAmount = Math.max(0, totalBudget - spentAmount);
+  const remainingAmount = totalBudget - spentAmount;
+  const isDebt = remainingAmount < 0;
+  const absRemaining = Math.abs(remainingAmount);
   const savedHours = remainingAmount / salaryPerHour;
+  const workOffHours = Math.abs(remainingAmount) / salaryPerHour;
 
   // Форматируем часы в читаемый формат
   const formatHours = (hours: number): string => {
+    hours = Math.abs(hours);
     if (hours < 1) {
       const mins = Math.round(hours * 60);
       return `${mins} мин`;
@@ -47,10 +51,13 @@ export function PieChart({
     return `${Math.round(hours)} ч`;
   };
 
-  // Комментарий в зависимости от процента сэкономленного
+  // Комментарий в зависимости от процента сэкономленного или долга
   const savedPercent =
     totalBudget > 0 ? (remainingAmount / totalBudget) * 100 : 0;
   const getComment = () => {
+    if (isDebt) {
+      return `🚫 У вас долг ${absRemaining.toLocaleString()} ₽! Нужно отработать ${formatHours(workOffHours)} чтобы закрыть!`;
+    }
     if (savedPercent >= 80) {
       return "💰 Отлично! Ты очень экономный!";
     } else if (savedPercent >= 50) {
@@ -89,8 +96,8 @@ export function PieChart({
       }
     });
 
-    // Добавляем оставшиеся средства (зелёный сектор)
-    if (remainingAmount > 0) {
+    // Добавляем оставшиеся средства (зелёный сектор) или долг (красный)
+    if (!isDebt && remainingAmount > 0) {
       const angle = (remainingAmount / totalBudget) * 360;
       pieSegments.push({
         value: remainingAmount,
@@ -103,7 +110,7 @@ export function PieChart({
     }
 
     setAnimatedSegments(pieSegments);
-  }, [segments, remainingAmount, totalBudget]);
+  }, [segments, remainingAmount, totalBudget, isDebt]);
 
   const polarToCartesian = (
     cx: number,
@@ -188,14 +195,22 @@ export function PieChart({
             <circle cx="100" cy="100" r="50" fill="rgba(0,0,0,0.3)" />
           </svg>
 
-          {/* Центр с оставшейся суммой */}
+          {/* Центр с оставшейся суммой или долгом */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-            <div className="text-2xl font-bold">
-              {remainingAmount.toLocaleString()} ₽
+            <div
+              className={`text-2xl font-bold ${isDebt ? "text-red-400" : ""}`}
+            >
+              {isDebt
+                ? `-${absRemaining.toLocaleString()}`
+                : remainingAmount.toLocaleString()}{" "}
+              ₽
             </div>
             <div className="text-xs text-purple-200 mt-1">
               из {totalBudget.toLocaleString()} ₽
             </div>
+            {isDebt && (
+              <div className="text-xs text-red-400 mt-1 font-medium">Долг!</div>
+            )}
           </div>
         </div>
 
@@ -221,7 +236,7 @@ export function PieChart({
                 </div>
               ),
           )}
-          {remainingAmount > 0 && (
+          {!isDebt && remainingAmount > 0 && (
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <div
@@ -235,17 +250,39 @@ export function PieChart({
               </span>
             </div>
           )}
+          {isDebt && (
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: "#ef4444" }}
+                />
+                <span className="text-purple-200">Долг</span>
+              </div>
+              <span className="text-red-400 font-medium">
+                {absRemaining.toLocaleString()} ₽
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Комментарий */}
         <div className="mt-4 text-center">
-          <div className="text-purple-200 text-sm mb-1">Сэкономлено</div>
-          <div className="text-white font-semibold text-lg">
-            {remainingAmount.toLocaleString()} ₽
+          <div className="text-purple-200 text-sm mb-1">
+            {isDebt ? "Нужно отработать" : "Сэкономлено"}
           </div>
-          <div className="text-purple-300 text-sm">
-            ({formatHours(savedHours)})
+          <div
+            className={`font-semibold text-lg ${isDebt ? "text-red-400" : "text-white"}`}
+          >
+            {isDebt
+              ? formatHours(workOffHours)
+              : `${absRemaining.toLocaleString()} ₽`}
           </div>
+          {!isDebt && (
+            <div className="text-purple-300 text-sm">
+              ({formatHours(savedHours)})
+            </div>
+          )}
           <div className="mt-2 text-purple-100 italic text-sm">
             {getComment()}
           </div>
