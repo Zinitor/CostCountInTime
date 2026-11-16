@@ -22,3 +22,8 @@ Thumbs.db
 .env
 .env.local
 .env.production
+
+# Local data and build artifacts
+*.db
+coverage.out
+backend/api
